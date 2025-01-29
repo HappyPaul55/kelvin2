@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import Executor from './Executor';
+import Executor from '@/Executors/Executor';
 import ExecutorResponse from '@/Executors/ExecutorResponse';
+import Turndown from 'turndown';
 
 const WebReadExecutorSchema = z.object({
   command: z.literal('web-read'),
@@ -19,10 +20,30 @@ export default class WebReadExecutor implements Executor {
   }
 
   async execute() {
-    return ExecutorResponse(
-      255,
-      'not implemented',
-    );
+    try {
+      const response = await fetch(this.params.url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        return ExecutorResponse(500, `Failed to fetch URL: ${response.status} ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('text/html')) {
+        return ExecutorResponse(400, `URL content is not HTML (Content-Type: ${contentType})`);
+      }
+
+      const html = await response.text();
+      const turndownService = new Turndown();
+      const markdown = turndownService.turndown(html);
+
+      return ExecutorResponse(0, markdown);
+    } catch (error) {
+      return ExecutorResponse(500, `Error during web-read execution: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   static getSchema() {

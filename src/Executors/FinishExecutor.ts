@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import Executor from './Executor';
+import Executor from '@/Executors/Executor';
 import ExecutorResponse from '@/Executors/ExecutorResponse';
 
 const FinishExecutorSchema = z.object({

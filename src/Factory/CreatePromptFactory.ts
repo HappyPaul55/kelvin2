@@ -1,10 +1,13 @@
 import executors from "@/Executors";
 import { ExecutorResponseSchema } from "@/Executors/ExecutorResponse";
+import { execSync } from "child_process";
+import { accessSync, readFileSync, readdirSync, statSync } from "fs";
+import fs from "fs";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
-function preludePrompt() {
-    return `You are AI Code Agent, a very helpful AI assistant that can interact with a computer to create solutions and solve tasks.
+function preludePrompt(): string {
+    return `**You are AI Code Agent, a very helpful AI assistant that can interact with a computer to create solutions and solve tasks.**
 
 <IMPORTANT>
 * If user provides a path, you should NOT assume it's relative to the current working directory. Instead, you should explore the file system to find the file before working on it.
@@ -23,7 +26,7 @@ function functionsPrompt(): string {
 
     // Give Function declaration.
     result.push(header('Functions'));
-    result.push("You have access to the following functions:");
+    result.push("**You have access to the following functions:**");
     const functionSchema = z.discriminatedUnion('command', executors.map(executor => executor.getSchema()) as any);
     result.push(JSON.stringify(zodToJsonSchema(functionSchema, "FunctionSchema"), null, 2), "");
 
@@ -37,12 +40,12 @@ function functionsPrompt(): string {
     return result.join("\r\n");
 }
 
-function examplesPrompt() {
+function examplesPrompt(): string {
     const result: string[] = [];
 
     // Create an example journey.
     result.push(header('Example'));
-    result.push('Here is an example');
+    result.push('**Here is an example**');
     result.push('USER: Create an express server that shows "great success" when you go to "/testy/westy".');
     result.push(`ASSISTANT: To create an Express server that shows "great success" when you navigate to "/testy/westy", we'll follow these steps:
 1) Initialize a new Node.js project: This will create a package.json file.
@@ -128,21 +131,48 @@ Wrote to /workspace/package.json
 
     result.push(header('End Example'));
 
-    result.push("", "Do NOT assume the environment is the same as in the example above.", "");
+    result.push("", "**Do NOT assume the environment is the same as in the example above.**", "");
 
-    result.push(header('New Task Description'));
+    return result.join("\r\n");
+}
 
-    result.push(`PLEASE follow the format strictly! **PLEASE EMIT ONE AND ONLY ONE FUNCTION CALL PER MESSAGE.**
+function getState() {
+    const result: string[] = [];
 
-Please look at the README and make the following improvements, if they make sense:
-* correct any typos that you find
-* add missing language annotations on codeblocks
-* if there are references to other files or other sections of the README, turn them into links
-* make sure the readme has an h1 title towards the top
-* make sure any existing sections in the readme are appropriately separated with headings
+    result.push(header('Current State'));
+    
+    // Get a list of executables.
+    result.push('**You have access to the following programs via the bash command:**');
+    const paths = process.env.PATH?.split(':') ?? [];
+    const executables: Record<string,boolean> = {};
+    paths.map(dir => {
+        try {
+            // Ignore `/mnt` and WSL executables.
+            if (dir.startsWith('/mnt/') || dir.startsWith('/usr/lib/wsl/lib')) {
+                return [];
+            }
+            const files = readdirSync(dir);
+            return files.filter(file => {
+                const fullPath = `${dir}/${file}`;
+                try {
+                    accessSync(fullPath, fs.constants.X_OK);
+                    if (statSync(fullPath).isFile()) {
+                        executables[file] = true;
+                    }
+                } catch {
+                    return false;
+                }
+            });
+        } catch {
+            return [];
+        }
+    });
+    result.push(Object.keys(executables).join(' '), "")
 
-If there are no obvious ways to improve the README, make at least one small change to make the wording clearer or friendlier
-    `)
+    result.push('**The current project structure is:**');
+    result.push(execSync('git ls-tree -r HEAD --name-only').toString('utf8'));
+
+    result.push(header('End Current State'), "");
 
     return result.join("\r\n");
 }
@@ -153,6 +183,14 @@ export default function CreatePromptFactory(): string {
     prompt.push(preludePrompt());
     prompt.push(functionsPrompt());
     prompt.push(examplesPrompt());
+    prompt.push(getState());
+
+    prompt.push(header('New Task Description'));
+
+    prompt.push(`PLEASE follow the format strictly! **PLEASE EMIT ONE AND ONLY ONE FUNCTION CALL PER MESSAGE.**
+
+Please create a unit test for BashExecutor.ts using jest.
+    `)
 
 
     return prompt.join("\r\n");
