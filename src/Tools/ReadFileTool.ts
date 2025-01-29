@@ -1,9 +1,9 @@
 import fs from 'fs/promises';
 import { z } from 'zod';
-import Executor from '@/Executors/Executor';
-import ExecutorResponse from '@/Executors/ExecutorResponse';
+import Tool from '@/Tools/Tool';
+import ToolResult from '@/Tools/ToolResult';
 
-const ReadFileExecutorSchema = z.object({
+const ReadFileToolSchema = z.object({
   command: z.literal('read-file'),
   path: z.string().min(1).describe('For example: `/workspace/src/index.ts`'),
   range: z
@@ -14,13 +14,13 @@ const ReadFileExecutorSchema = z.object({
     .optional(),
 }).describe("Reads a file, if range is defined, only the requested lines will be read.");
 
-type ReadFileExecutorSchema = z.infer<typeof ReadFileExecutorSchema>;
+type ReadFileToolSchema = z.infer<typeof ReadFileToolSchema>;
 
-export default class ReadFileExecutor implements Executor {
+export default class ReadFileTool implements Tool {
   private readonly params;
 
-  constructor(input: ReadFileExecutorSchema) {
-    this.params = ReadFileExecutor.getSchema().parse(input);
+  constructor(input: ReadFileToolSchema) {
+    this.params = ReadFileTool.getSchema().parse(input);
   }
 
   async execute() {
@@ -37,9 +37,9 @@ export default class ReadFileExecutor implements Executor {
         lines = lines.slice(startIndex, endIndex);
       }
 
-      return ExecutorResponse(0, lines.join('\n'));
+      return ToolResult(0, lines.join('\n'));
     } catch (error) {
-      return ExecutorResponse(
+      return ToolResult(
         1,
         error instanceof Error ? error.message : 'Unknown error',
       );
@@ -47,6 +47,6 @@ export default class ReadFileExecutor implements Executor {
   }
 
   static getSchema() {
-    return ReadFileExecutorSchema;
+    return ReadFileToolSchema;
   }
 }

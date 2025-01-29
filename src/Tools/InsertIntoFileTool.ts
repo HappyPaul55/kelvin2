@@ -1,22 +1,22 @@
 import fs from 'fs/promises';
 import { z } from 'zod';
-import Executor from '@/Executors/Executor';
-import ExecutorResponse from '@/Executors/ExecutorResponse';
+import Tool from '@/Tools/Tool';
+import ToolResult from '@/Tools/ToolResult';
 
-const InsertIntoFileExecutorSchema = z.object({
+const InsertIntoFileToolSchema = z.object({
   command: z.literal('insert-into-file'),
   path: z.string().min(1).describe('For example: `/workspace/src/index.ts`'),
   new_str: z.string(),
   insert_line: z.number().int().positive(),
 }).describe('Insert a line into a file at a specific line number.');
 
-type InsertIntoFileExecutorSchema = z.infer<typeof InsertIntoFileExecutorSchema>;
+type InsertIntoFileToolSchema = z.infer<typeof InsertIntoFileToolSchema>;
 
-export default class InsertIntoFileExecutor implements Executor {
+export default class InsertIntoFileTool implements Tool {
   private readonly params;
 
-  constructor(input: InsertIntoFileExecutorSchema) {
-    this.params = InsertIntoFileExecutor.getSchema().parse(input);
+  constructor(input: InsertIntoFileToolSchema) {
+    this.params = InsertIntoFileTool.getSchema().parse(input);
   }
 
   async execute() {
@@ -39,9 +39,9 @@ export default class InsertIntoFileExecutor implements Executor {
       }
       
       await fs.writeFile(filePath, lines.join('\n'));
-      return ExecutorResponse(0, '');
+      return ToolResult(0, '');
     } catch (error) {
-      return ExecutorResponse(
+      return ToolResult(
         1,
         error instanceof Error ? error.message : 'Unknown error',
       );
@@ -49,6 +49,6 @@ export default class InsertIntoFileExecutor implements Executor {
   }
 
   static getSchema() {
-    return InsertIntoFileExecutorSchema;
+    return InsertIntoFileToolSchema;
   }
 }

@@ -1,22 +1,22 @@
 import fs from 'fs/promises';
 import { z } from 'zod';
-import Executor from '@/Executors/Executor';
-import ExecutorResponse from '@/Executors/ExecutorResponse';
+import Tool from '@/Tools/Tool';
+import ToolResult from '@/Tools/ToolResult';
 
-const ReplaceStringInFileExecutorSchema = z.object({
+const ReplaceStringInFileToolSchema = z.object({
   command: z.literal('replace-string-in-file'),
   path: z.string().min(1).describe('For example: `/workspace/src/index.ts`'),
   find: z.string(),
   replace: z.string()
 }).describe("Does a find and replace in a file.");
 
-type ReplaceStringInFileExecutorSchema = z.infer<typeof ReplaceStringInFileExecutorSchema>;
+type ReplaceStringInFileToolSchema = z.infer<typeof ReplaceStringInFileToolSchema>;
 
-export default class ReplaceStringInFileExecutor implements Executor {
+export default class ReplaceStringInFileTool implements Tool {
   private readonly params;
 
-  constructor(input: ReplaceStringInFileExecutorSchema) {
-    this.params = ReplaceStringInFileExecutor.getSchema().parse(input);
+  constructor(input: ReplaceStringInFileToolSchema) {
+    this.params = ReplaceStringInFileTool.getSchema().parse(input);
   }
 
   async execute() {
@@ -27,9 +27,9 @@ export default class ReplaceStringInFileExecutor implements Executor {
       const newContent = content.split(find).join(replace);
       
       await fs.writeFile(filePath, newContent);
-      return ExecutorResponse(0, '');
+      return ToolResult(0, '');
     } catch (error) {
-      return ExecutorResponse(
+      return ToolResult(
         1,
         error instanceof Error ? error.message : 'Unknown error',
       );
@@ -37,6 +37,6 @@ export default class ReplaceStringInFileExecutor implements Executor {
   }
 
   static getSchema() {
-    return ReplaceStringInFileExecutorSchema;
+    return ReplaceStringInFileToolSchema;
   }
 }
