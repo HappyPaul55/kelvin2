@@ -1,15 +1,36 @@
 import CreateExamplePrompt from "@/Prompts/CreateExamplePrompt";
-import CreateFunctionsPrompt from "@/Prompts/CreateFunctionsPrompt";
-import CreatePreludePrompt from "@/Prompts/CreatePreludePrompt";
 import CreateStatePrompt from "@/Prompts/CreateStatePrompt";
+import CreateToolsPrompt from "@/Prompts/CreateToolsPrompt";
 import Bold from "@/Prompts/Styling/Bold";
 import Header from "@/Prompts/Styling/Header";
+import BashTool from "@/Tools/BashTool";
+import CreateFileTool from "@/Tools/CreateFileTool";
+import FinishTool from "@/Tools/FinishTool";
+import InsertIntoFileTool from "@/Tools/InsertIntoFileTool";
+import ReadFileTool from "@/Tools/ReadFileTool";
+import ReplaceStringInFileTool from "@/Tools/ReplaceStringInFileTool";
+import WebReadTool from "@/Tools/WebReadTool";
 
 export default function DeveloperAgent(task: string): string {
   const prompt: string[] = [];
 
-  prompt.push(CreatePreludePrompt());
-  prompt.push(CreateFunctionsPrompt([]));
+  prompt.push(`${Bold("You are AI Code Agent, a very helpful AI assistant that can interact with a computer to create solutions and solve tasks.")}
+
+<IMPORTANT>
+* If user provides a path, you should NOT assume it's relative to the current working directory. Instead, you should explore the file system to find the file before working on it.
+* When configuring git credentials, use "Paul Happy Hutchinson" as the user.name and "paul@lexiphanic.co.uk" as the user.email by default, unless explicitly instructed otherwise.
+* The assistant MUST NOT include comments in the code unless they are necessary to describe non-obvious behavior.
+</IMPORTANT>
+`);
+  prompt.push(CreateToolsPrompt([
+    BashTool,
+    CreateFileTool,
+    FinishTool,
+    InsertIntoFileTool,
+    ReadFileTool,
+    ReplaceStringInFileTool,
+    WebReadTool,
+  ]));
   prompt.push(CreateExamplePrompt([
     Header('Example'),
     Bold('Here is an example'),
@@ -94,7 +115,7 @@ Wrote to /workspace/package.json
     Bold("Do NOT assume the environment is the same as in the example above."),
     "",
   ].join("\r\n")));
-  prompt.push(CreateStatePrompt());
+//   prompt.push(CreateStatePrompt());
 
   prompt.push(Header('New Task Description'));
 

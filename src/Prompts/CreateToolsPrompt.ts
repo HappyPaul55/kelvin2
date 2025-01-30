@@ -5,7 +5,7 @@ import Tool from "@/Tools/Tool";
 import Header from "@/Prompts/Styling/Header";
 import Bold from "@/Prompts/Styling/Bold";
 
-export default function CreateFunctionsPrompt(tools: typeof Tool[]): string {
+export default function CreateToolsPrompt(tools: { getSchema: typeof Tool.getSchema }[]): string {
   const result: string[] = [];
 
   // Give Function declaration.

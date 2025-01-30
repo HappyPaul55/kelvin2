@@ -30,7 +30,7 @@ export default class CreateFileTool implements Tool {
         : JSON.stringify(contents, null, 2);
 
       await fs.writeFile(filePath, data);
-      return ToolResult(0, '');
+      return ToolResult(0, 'File Created');
     } catch (error) {
       return ToolResult(
         1,
