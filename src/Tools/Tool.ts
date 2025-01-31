@@ -6,4 +6,6 @@ export default abstract class Tool {
   static getSchema(): z.ZodObject<any> {
     return z.object({});
   }
+
+  abstract getParams(): z.infer<any>;
 }

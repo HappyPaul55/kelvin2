@@ -18,8 +18,8 @@ export default class FinishTool implements Tool {
 
   async execute() {
     return ToolResult(
-      255,
-      'not implemented',
+      0,
+      'Task Completed',
     );
   }
 
